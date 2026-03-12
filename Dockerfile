@@ -6,7 +6,7 @@
 ARG USE_CN_MIRROR=false
 
 # 阶段1: 构建前端
-FROM node:22-alpine AS frontend-builder
+FROM node:25-alpine AS frontend-builder
 
 ARG USE_CN_MIRROR
 
