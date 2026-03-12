@@ -1,5 +1,6 @@
-# 多阶段构建 Dockerfile for AI Story Creator
+# 多阶段构建 Dockerfile for MuMuAINovel-SingleUser
 # 支持多架构构建: linux/amd64, linux/arm64
+# 单用户模式 + SQLite + 预初始化数据库
 
 # 构建参数
 ARG USE_CN_MIRROR=false
@@ -50,10 +51,9 @@ RUN if [ "$USE_CN_MIRROR" = "true" ]; then \
         sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
     fi
 
-# 安装系统依赖（添加数据库工具）
+# 安装系统依赖
 RUN apt-get update && apt-get install -y \
     gcc \
-    postgresql-client \
     netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
@@ -85,31 +85,34 @@ ENV SENTENCE_TRANSFORMERS_HOME=/app/embedding
 # 下载 embedding 模型（从 HuggingFace）
 # 使用 Python 脚本预下载模型，这样运行时不需要网络
 RUN python -c "\
-from sentence_transformers import SentenceTransformer; \
-import os; \
-os.environ['SENTENCE_TRANSFORMERS_HOME'] = '/app/embedding'; \
-print('Downloading sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2...'); \
-model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'); \
-print('Model downloaded successfully!'); \
+from sentence_transformers import SentenceTransformer; \\
+import os; \\
+os.environ['SENTENCE_TRANSFORMERS_HOME'] = '/app/embedding'; \\
+print('Downloading sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2...'); \\
+model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'); \\
+print('Model downloaded successfully!'); \\
 "
 
-# 复制后端代码（不包含embedding，因为已经下载了）
+# 复制后端代码和脚本
 COPY backend/ ./
 
 # 从前端构建阶段复制构建好的静态文件
 COPY --from=frontend-builder /frontend/dist ./static
 
-# 复制 Alembic 迁移配置和脚本（PostgreSQL）
-COPY backend/alembic-postgres.ini ./alembic.ini
-COPY backend/alembic/postgres ./alembic
+# 复制 entrypoint.sh 启动脚本
 COPY backend/scripts/entrypoint.sh /app/entrypoint.sh
-COPY backend/scripts/migrate.py ./scripts/migrate.py
 
 # 赋予执行权限
 RUN chmod +x /app/entrypoint.sh
 
 # 创建必要的目录
 RUN mkdir -p /app/data /app/logs
+
+# 在构建时检查预初始化数据库是否存在
+RUN if [ ! -f "/app/data/mumuai.db" ]; then \
+    echo "❌ 错误：未找到预初始化数据库文件 data/mumuai.db，请确保已正确添加该文件。"; \
+    exit 1; \
+fi
 
 # 暴露端口
 EXPOSE 8000
@@ -128,5 +131,5 @@ ENV HF_HUB_OFFLINE=1
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
-# 使用 entrypoint 脚本启动（自动执行迁移）
+# 使用 entrypoint 脚本启动（不再执行迁移）
 ENTRYPOINT ["/app/entrypoint.sh"]
