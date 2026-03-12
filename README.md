@@ -82,45 +82,55 @@ docker-compose up -d
 
 ---
 
-## 📋 完整变更清单
+## 📋 对原项目的修改
 
-本节记录了从原项目到单用户版本的所有文件变更。
+本节详细列出从 [xiamuceer-j/MuMuAINovel](https://github.com/xiamuceer-j/MuMuAINovel) 到本单用户版本的所有关键修改。
 
-### 后端 (Backend)
+### 核心架构变更
 
-| 文件路径 | 修改类型 | 说明 |
-|----------|----------|------|
-| `backend/app/middleware/auth_middleware.py` | 重写 | 移除 Cookie 认证逻辑，始终注入 `user_id="single_user"` 和 `is_admin=True` |
-| `backend/app/database.py` | 修改 | `get_engine()` 使用单一共享引擎，添加 `get_single_user_id()` 函数，自动检测 SQLite/PostgreSQL |
-| `backend/app/api/auth.py` | 重写 | 移除所有登录、登出、密码接口，仅保留健康检查端点 `/auth/health` |
-| `backend/app/config.py` | 修改 | `LOCAL_AUTH_ENABLED = False`，会话过期时间设为超长周期 |
-| `backend/.env.example` | 修改 | 注释 OAuth 配置，`LOCAL_AUTH_ENABLED=false`，添加 SQLite 配置示例 |
-| `backend/scripts/entrypoint.sh` | 重写 | 简化为无需等待外部数据库，启动时自动迁移 SQLite |
+| 变更项 | 原项目 | 当前版本 | 说明 |
+|--------|--------|-----------|-------|
+| **部署模式** | 多用户系统 | 单用户系统 | 移除所有认证和用户管理功能 |
+| **数据库** | PostgreSQL | SQLite | 改用轻量级文件数据库 |
+| **数据隔离** | 多用户 | 单一用户 (`single_user`) | 所有数据归属于固定用户 |
+| **容器数量** | 2 (后端 + DB) | 1 (仅后端) | 不再依赖独立数据库容器 |
+| **初始化流程** | 需运行 Alembic 迁移 | 开箱即用 | 数据库文件已预初始化 |
 
-### 前端 (Frontend)
+### 关键文件修改
 
-| 文件路径 | 修改类型 | 说明 |
-|----------|----------|------|
-| `frontend/src/components/ProtectedRoute.tsx` | 重写 | 移除登录检查逻辑，直接渲染子组件 |
-| `frontend/src/pages/Login.tsx` | 删除 | 登录页面已移除 |
-| `frontend/src/App.tsx` | 修改 | 删除 `/login` 和 `/auth/callback` 路由，移除 Login 组件导入 |
-| `frontend/src/services/api.ts` | 修改 | 移除 `authApi` 模块，移除 401 跳转拦截器 |
+#### 后端 (Backend)
 
-### 配置文件
+| 文件路径 | 修改内容 |
+|----------|----------|
+| `app/middleware/auth_middleware.py` | 重写为单用户模式，始终注入 `user_id="single_user"`, `is_admin=True` |
+| `app/database.py` | 修改 `get_engine()` 以支持 SQLite 并返回单一共享引擎 |
+| `app/api/auth.py` | 重写，仅保留 `/auth/health` 健康检查端点 |
+| `app/config.py` | 设置 `LOCAL_AUTH_ENABLED = False` |
+| `scripts/entrypoint.sh` | 重写，移除对 PostgreSQL 的等待逻辑，禁用迁移 |
 
-| 文件路径 | 修改类型 | 说明 |
-|----------|----------|------|
-| `docker-compose.yml` | 重构 | 移除 PostgreSQL 服务，改用 SQLite + 数据卷挂载 |
-| `.env.example` | 新建 | 单用户版配置文件模板 |
-| `README.md` | 替换 | 完整的单用户版使用说明 |
+#### 前端 (Frontend)
 
-### 数据库
+| 文件路径 | 修改内容 |
+|----------|----------|
+| `src/components/ProtectedRoute.tsx` | 重写，直接渲染子组件，不再检查登录状态 |
+| `src/pages/Login.tsx` | 已删除 |
+| `src/App.tsx` | 删除 `/login` 和 `/auth/callback` 路由 |
+| `src/services/api.ts` | 移除 `authApi` 模块及相关的拦截器 |
 
-| 操作 | 说明 |
-|------|------|
-| 数据库类型 | PostgreSQL → SQLite |
-| 连接方式 | `sqlite+aiosqlite:///data/mumuai.db` |
-| 数据模型 | 保留 `users` 表结构但不使用，确保可逆扩展 |
+#### 配置与构建
+
+| 文件路径 | 修改内容 |
+|----------|----------|
+| `Dockerfile` | 移除 `postgresql-client` 依赖，简化构建流程 |
+| `docker-compose.yml` | 移除 `postgres` 服务，改为使用本地数据卷 |
+| `.env.example` | 更新为单用户模式配置，启用 SQLite 连接字符串 |
+
+### 数据库结构
+
+- **数据库文件**: `data/mumuai.db`
+- **连接 URL**: `sqlite+aiosqlite:///data/mumuai.db`
+- **表结构兼容性**: 完全兼容原项目，未来可无缝升级回多用户模式
+- **用户相关表**: `users`, `user_passwords` 等表结构保留但不再使用
 
 ---
 
