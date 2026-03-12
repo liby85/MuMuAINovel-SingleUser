@@ -34,7 +34,7 @@ docker-compose up -d
 
 访问：`http://localhost:8000`
 
-> 📝 **重要提示**：首次运行前，请在 `.env` 文件中配置你的 **OpenAI API Key**，否则 AI 生成功能将不可用。
+> ✅ **无需初始化**：数据库已预置，启动即用！
 
 ---
 

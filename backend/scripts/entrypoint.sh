@@ -1,6 +1,6 @@
 #!/bin/bash
 # Docker 容器启动入口脚本（单用户 SQLite 版本）
-# 功能：执行迁移，启动应用
+# 功能：直接启动应用，不再执行数据库迁移
 
 set -e
 
@@ -29,39 +29,16 @@ DATABASE_URL="${DATABASE_URL:-sqlite+aiosqlite:///data/mumuai.db}"
 DB_FILE=$(echo $DATABASE_URL | sed 's/sqlite+aiosqlite:\/\/\///')
 
 if [ -n "$DB_FILE" ] && [ -f "$DB_FILE" ]; then
-    echo "✅ 检测到现有数据库: $DB_FILE"
+    echo "✅ 检测到预初始化数据库: $DB_FILE"
 else
-    echo "📝 将创建新数据库: $DB_FILE"
-    mkdir -p $(dirname $DB_FILE)
+    echo "❌ 错误: 未找到数据库文件 $DB_FILE！请确保已正确挂载数据卷。"
+    exit 1
 fi
 
-# 运行数据库迁移
-echo "================================================"
-echo "🔄 执行数据库迁移..."
-echo "================================================"
+# 不再执行数据库迁移
+# 因为数据库已包含所有必要结构和预设数据
 
-cd /app
-
-# 使用 SQLite 的 Alembic 配置
-if [ -f "alembic-sqlite.ini" ]; then
-    echo "🔄 使用 SQLite 迁移配置..."
-    # SQLite 迁移脚本存放在 alembic/sqlite 目录
-    export ALEMBIC_CONFIG=alembic-sqlite.ini
-    
-    # 修改env.py以使用sqlite
-    if [ -f "alembic/sqlite/env.py" ]; then
-        # SQLite 使用 run_migrations_offline 和 run_migrations_online
-        alembic -x db=sqlite upgrade head || true
-    fi
-else
-    echo "⚠️ 未找到 SQLite 配置，跳过迁移"
-fi
-
-if [ $? -eq 0 ]; then
-    echo "✅ 数据库迁移成功"
-else
-    echo "⚠️ 迁移可能已完成或首次运行，将继续启动..."
-fi
+# 启动应用
 
 echo "================================================"
 echo "🎉 启动应用服务..."
