@@ -17,16 +17,24 @@
 ## 📦 部署方式
 
 ```bash
-# 克隆仓库（待创建）
+# 克隆仓库
 git clone https://github.com/liby85/MuMuAINovel-SingleUser.git
 
 cd MuMuAINovel-SingleUser
+
+# 复制配置文件
+cp .env.example .env
+
+# 编辑 .env 文件（至少设置 OpenAI API Key）
+# vim .env  # 或 nano .env
 
 # 启动服务
 docker-compose up
 ```
 
 访问：`http://localhost:3000`
+
+> 📝 **重要提示**：首次运行前，请在 `.env` 文件中配置你的 **OpenAI API Key**，否则 AI 生成功能将不可用。
 
 ## 🛠️ 技术说明
 
