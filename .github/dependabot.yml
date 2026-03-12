@@ -1,0 +1,47 @@
+# Dependabot 配置
+# 自动检查上游项目更新
+
+version: 2
+updates:
+  # 监控上游 Git 仓库
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+    reviewers:
+      - "liby85"
+    labels:
+      - "dependencies"
+      - "upstream"
+    commit-message:
+      prefix: "⬆️"
+      include: "scope"
+      
+  # 监控 Docker 基础镜像更新
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "main"
+    reviewers:
+      - "liby85"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "⬆️ docker:"
+      
+  # 监控 GitHub Actions 更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "main"
+    reviewers:
+      - "liby85"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "⬆️ actions:"
