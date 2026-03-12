@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mumujie/mumuainovel:latest
     container_name: mumuainovel
     ports:
       - "${APP_PORT:-8000}:8000"
