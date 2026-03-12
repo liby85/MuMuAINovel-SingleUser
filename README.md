@@ -82,6 +82,48 @@ docker-compose up -d
 
 ---
 
+## 📋 完整变更清单
+
+本节记录了从原项目到单用户版本的所有文件变更。
+
+### 后端 (Backend)
+
+| 文件路径 | 修改类型 | 说明 |
+|----------|----------|------|
+| `backend/app/middleware/auth_middleware.py` | 重写 | 移除 Cookie 认证逻辑，始终注入 `user_id="single_user"` 和 `is_admin=True` |
+| `backend/app/database.py` | 修改 | `get_engine()` 使用单一共享引擎，添加 `get_single_user_id()` 函数，自动检测 SQLite/PostgreSQL |
+| `backend/app/api/auth.py` | 重写 | 移除所有登录、登出、密码接口，仅保留健康检查端点 `/auth/health` |
+| `backend/app/config.py` | 修改 | `LOCAL_AUTH_ENABLED = False`，会话过期时间设为超长周期 |
+| `backend/.env.example` | 修改 | 注释 OAuth 配置，`LOCAL_AUTH_ENABLED=false`，添加 SQLite 配置示例 |
+| `backend/scripts/entrypoint.sh` | 重写 | 简化为无需等待外部数据库，启动时自动迁移 SQLite |
+
+### 前端 (Frontend)
+
+| 文件路径 | 修改类型 | 说明 |
+|----------|----------|------|
+| `frontend/src/components/ProtectedRoute.tsx` | 重写 | 移除登录检查逻辑，直接渲染子组件 |
+| `frontend/src/pages/Login.tsx` | 删除 | 登录页面已移除 |
+| `frontend/src/App.tsx` | 修改 | 删除 `/login` 和 `/auth/callback` 路由，移除 Login 组件导入 |
+| `frontend/src/services/api.ts` | 修改 | 移除 `authApi` 模块，移除 401 跳转拦截器 |
+
+### 配置文件
+
+| 文件路径 | 修改类型 | 说明 |
+|----------|----------|------|
+| `docker-compose.yml` | 重构 | 移除 PostgreSQL 服务，改用 SQLite + 数据卷挂载 |
+| `.env.example` | 新建 | 单用户版配置文件模板 |
+| `README.md` | 替换 | 完整的单用户版使用说明 |
+
+### 数据库
+
+| 操作 | 说明 |
+|------|------|
+| 数据库类型 | PostgreSQL → SQLite |
+| 连接方式 | `sqlite+aiosqlite:///data/mumuai.db` |
+| 数据模型 | 保留 `users` 表结构但不使用，确保可逆扩展 |
+
+---
+
 ## 📄 License
 
 MIT License - 与原项目一致
