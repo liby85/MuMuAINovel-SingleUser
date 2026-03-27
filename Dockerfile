@@ -36,7 +36,7 @@ RUN sed -i "s|outDir: '../backend/static'|outDir: 'dist'|g" vite.config.ts
 RUN npm run build
 
 # 阶段2: 构建最终镜像
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 ARG USE_CN_MIRROR
 ARG TARGETPLATFORM
